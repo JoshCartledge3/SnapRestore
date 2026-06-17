@@ -6,6 +6,7 @@ public sealed class SnapchatExportAnalysis
 {
     public required string OriginalPath { get; init; }
     public string? ExportRootPath { get; init; }
+    public string? MemoriesDirectoryPath { get; init; }
     public string? MemoriesHistoryJsonPath { get; init; }
     public bool IsValid { get; init; }
     public bool IsZip { get; init; }

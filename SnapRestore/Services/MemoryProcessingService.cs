@@ -43,18 +43,13 @@ public class MemoryProcessingService(
             return outputFolder;
         }
 
-        if (string.IsNullOrWhiteSpace(analysis.ExportRootPath))
+        if (string.IsNullOrWhiteSpace(analysis.MemoriesHistoryJsonPath))
         {
-            await AppendProcessErrorAsync(reportFile, "Export root path is required.", cancellationToken);
+            await AppendProcessErrorAsync(reportFile, "Memories history JSON file is required.", cancellationToken);
             return outputFolder;
         }
 
-        var jsonPath = Path.Combine(
-            analysis.ExportRootPath!,
-            "json",
-            "memories_history.json");
-
-        var memories = await memoriesHistoryService.ParseAsync(jsonPath, cancellationToken);
+        var memories = await memoriesHistoryService.ParseAsync(analysis.MemoriesHistoryJsonPath, cancellationToken);
 
         var files = analysis.MainMediaFiles
             .OrderBy(GetDateFromFileName)

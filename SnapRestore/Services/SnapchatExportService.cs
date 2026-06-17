@@ -12,6 +12,43 @@ public class SnapchatExportService : ISnapchatExportService
     private const string JsonFolderName = "json";
     private const string MemoriesHistoryFileName = "memories_history.json";
 
+    public SnapchatExportAnalysis Analyse(string memoriesDirectoryPath, string memoriesHistoryJsonPath)
+    {
+        var memoriesFound = Directory.Exists(memoriesDirectoryPath);
+        var jsonFound = File.Exists(memoriesHistoryJsonPath)
+                        && Path.GetExtension(memoriesHistoryJsonPath)
+                            .Equals(".json", StringComparison.OrdinalIgnoreCase);
+
+        var mainMediaFiles = memoriesFound
+            ? Directory.EnumerateFiles(memoriesDirectoryPath)
+                .Where(IsMainMediaFile)
+                .ToList()
+            : [];
+
+        var isValid = memoriesFound && jsonFound && mainMediaFiles.Count > 0;
+
+        return new SnapchatExportAnalysis
+        {
+            OriginalPath = memoriesDirectoryPath,
+            ExportRootPath = Directory.GetParent(memoriesDirectoryPath)?.FullName,
+            MemoriesDirectoryPath = memoriesFound ? memoriesDirectoryPath : null,
+            MemoriesHistoryJsonPath = jsonFound ? memoriesHistoryJsonPath : null,
+            IsValid = isValid,
+            IsZip = false,
+            JsonFound = jsonFound,
+            MemoriesFolderFound = memoriesFound,
+            MainMediaFiles = mainMediaFiles,
+            MainMediaCount = mainMediaFiles.Count,
+            StatusMessage = (memoriesFound, jsonFound, mainMediaFiles.Count) switch
+            {
+                (false, _, _) => "Memories folder missing",
+                (_, false, _) => "JSON file missing",
+                (_, _, 0) => "No media found",
+                _ => "Ready"
+            }
+        };
+    }
+
     public SnapchatExportAnalysis Analyse(string path)
     {
         if (string.IsNullOrWhiteSpace(path))
@@ -69,6 +106,7 @@ public class SnapchatExportService : ISnapchatExportService
         {
             OriginalPath = path,
             ExportRootPath = exportRoot,
+            MemoriesDirectoryPath = memoriesFound ? memoriesDirectory : null,
             MemoriesHistoryJsonPath = jsonFound ? jsonFile : null,
             IsValid = isValid,
             IsZip = false,
