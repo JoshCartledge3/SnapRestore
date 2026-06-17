@@ -11,6 +11,8 @@
         MinWidth="700"
         MinHeight="825"
         Icon="/Assets/Icons/SnapRestore.png"
+        TransparencyLevelHint="None"
+        UseLayoutRounding="True"
         Title="SnapRestore">
 
     <Border Padding="26" Classes="app">
@@ -124,17 +126,16 @@
                         <StackPanel Spacing="8"
                                     HorizontalAlignment="Center">
                             <Grid Width="120"
-                                  Height="120">
+                                  Height="120"
+                                  ClipToBounds="True"
+                                  Background="{DynamicResource Surface}">
                                 <controls:CircularProgressRing Width="120"
                                                                Height="120"
                                                                Value="{Binding ProgressPercentage}"
                                                                StrokeThickness="9"
                                                                TrackBrush="{DynamicResource ProgressTrack}"
-                                                               ProgressBrush="{DynamicResource AppYellow}" />
-                                <Border Width="102"
-                                        Height="102"
-                                        CornerRadius="51"
-                                        Background="{DynamicResource Surface}" />
+                                                               ProgressBrush="{DynamicResource AppYellow}"
+                                                               FillBrush="{DynamicResource Surface}" />
                                 <TextBlock Text="{Binding ProgressPercentage, StringFormat={}{0:0}%}"
                                            FontSize="28"
                                            FontWeight="Bold"
