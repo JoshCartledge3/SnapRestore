@@ -18,7 +18,6 @@ CONTENTS_DIR="$APP_BUNDLE/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 DMG_PATH="$ARTIFACTS_DIR/$APP_NAME-$VERSION-$RUNTIME.dmg"
-DMG_STAGING_DIR="$ARTIFACTS_DIR/dmg"
 
 dotnet publish "$PROJECT_DIR/SnapRestore.csproj" \
   -c "$CONFIGURATION" \
@@ -37,16 +36,21 @@ if [ -d "$MACOS_DIR/Tools" ]; then
 fi
 
 chmod +x "$MACOS_DIR/$EXECUTABLE_NAME"
-find "$MACOS_DIR/Tools" -type f \( -name "ffmpeg" -o -name "exiftool" \) -exec chmod +x {} \;
+
+if [ -d "$MACOS_DIR/Tools" ]; then
+  find "$MACOS_DIR/Tools" -type f \( -name "ffmpeg" -o -name "exiftool" \) -exec chmod +x {} \;
+fi
 
 /usr/bin/codesign --force --deep --sign - "$APP_BUNDLE"
 
-rm -rf "$DMG_STAGING_DIR"
-mkdir -p "$DMG_STAGING_DIR"
+DMG_STAGING_DIR="$(mktemp -d "$ARTIFACTS_DIR/dmg.XXXXXX")"
+trap 'rm -rf "$DMG_STAGING_DIR"' EXIT
+
 cp -R "$APP_BUNDLE" "$DMG_STAGING_DIR/"
-ln -s /Applications "$DMG_STAGING_DIR/Applications"
+ln -sfn /Applications "$DMG_STAGING_DIR/Applications"
 
 rm -f "$DMG_PATH"
+
 hdiutil create \
   -volname "$APP_NAME" \
   -srcfolder "$DMG_STAGING_DIR" \
