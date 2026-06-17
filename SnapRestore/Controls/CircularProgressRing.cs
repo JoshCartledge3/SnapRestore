@@ -19,13 +19,17 @@ public sealed class CircularProgressRing : Control
     public static readonly StyledProperty<IBrush?> ProgressBrushProperty =
         AvaloniaProperty.Register<CircularProgressRing, IBrush?>(nameof(ProgressBrush));
 
+    public static readonly StyledProperty<IBrush?> FillBrushProperty =
+        AvaloniaProperty.Register<CircularProgressRing, IBrush?>(nameof(FillBrush));
+
     static CircularProgressRing()
     {
         AffectsRender<CircularProgressRing>(
             ValueProperty,
             StrokeThicknessProperty,
             TrackBrushProperty,
-            ProgressBrushProperty);
+            ProgressBrushProperty,
+            FillBrushProperty);
     }
 
     public double Value
@@ -52,12 +56,18 @@ public sealed class CircularProgressRing : Control
         set => SetValue(ProgressBrushProperty, value);
     }
 
+    public IBrush? FillBrush
+    {
+        get => GetValue(FillBrushProperty);
+        set => SetValue(FillBrushProperty, value);
+    }
+
     public override void Render(DrawingContext context)
     {
         base.Render(context);
 
         var strokeThickness = Math.Max(0, StrokeThickness);
-        var radius = Math.Max(0, Math.Min(Bounds.Width, Bounds.Height) / 2 - strokeThickness / 2);
+        var radius = Math.Max(0, Math.Floor(Math.Min(Bounds.Width, Bounds.Height) / 2 - strokeThickness / 2));
         if (radius <= 0)
         {
             return;
@@ -70,6 +80,7 @@ public sealed class CircularProgressRing : Control
         var progress = Math.Clamp(Value, 0, 100) / 100;
         if (progress <= 0)
         {
+            DrawCenterFill(context, center, radius, strokeThickness);
             return;
         }
 
@@ -77,6 +88,7 @@ public sealed class CircularProgressRing : Control
         {
             var progressPen = new Pen(ProgressBrush, strokeThickness);
             context.DrawEllipse(null, progressPen, center, radius, radius);
+            DrawCenterFill(context, center, radius, strokeThickness);
             return;
         }
 
@@ -99,6 +111,18 @@ public sealed class CircularProgressRing : Control
         }
 
         context.DrawGeometry(null, new Pen(ProgressBrush, strokeThickness), geometry);
+        DrawCenterFill(context, center, radius, strokeThickness);
+    }
+
+    private void DrawCenterFill(DrawingContext context, Point center, double radius, double strokeThickness)
+    {
+        if (FillBrush is null)
+        {
+            return;
+        }
+
+        var fillRadius = Math.Max(0, radius - strokeThickness / 2);
+        context.DrawEllipse(FillBrush, null, center, fillRadius, fillRadius);
     }
 
     private static Point PointOnCircle(Point center, double radius, double angleDegrees)
