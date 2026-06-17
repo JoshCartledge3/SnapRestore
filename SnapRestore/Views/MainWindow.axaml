@@ -1,0 +1,208 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SnapRestore.ViewModels"
+        xmlns:controls="using:SnapRestore.Controls"
+        x:Class="SnapRestore.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Width="700"
+        Height="825"
+        MaxWidth="700"
+        MaxHeight="825"
+        MinWidth="700"
+        MinHeight="825"
+        Icon="/Assets/Icons/snaprestore.ico"
+        Title="SnapRestore">
+
+    <Border Padding="26" Classes="app">
+        <StackPanel Spacing="22">
+
+            <Grid Height="210"
+                  x:Name="DropZone"
+                  Cursor="Hand"
+                  Opacity="{Binding DropZoneOpacity}"
+                  DragDrop.AllowDrop="True"
+                  DragDrop.DragEnter="OnDragEnter"
+                  DragDrop.DragOver="OnDragOver"
+                  DragDrop.DragLeave="OnDragLeave"
+                  DragDrop.Drop="OnDrop"
+                  PointerEntered="OnPointerEntered"
+                  PointerExited="OnPointerExited"
+                  PointerPressed="OnPointerPressed">
+
+                <Grid.Transitions>
+                    <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                    </Transitions>
+                </Grid.Transitions>
+
+                <Rectangle
+                    x:Name="DropZoneBorder"
+                    RadiusX="18"
+                    RadiusY="18"
+                    Fill="Transparent"
+                    Stroke="{Binding DropZoneBorderBrush}"
+                    StrokeThickness="2"
+                    StrokeDashArray="1,3"
+                    StrokeLineCap="Round"/>
+
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            IsHitTestVisible="False"
+                            Spacing="14">
+
+                    <TextBlock Text="📁"
+                               FontSize="46"
+                               HorizontalAlignment="Center"/>
+
+                    <TextBlock Text="Drag and drop your Snapchat export here"
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"/>
+
+                    <TextBlock Text="You can also drop a .zip file and we'll extract it for you."
+                               FontSize="15"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               Opacity="0.75"
+                               HorizontalAlignment="Center"/>
+
+                </StackPanel>
+
+            </Grid>
+            
+            <Border Classes="card">
+                <StackPanel Spacing="18">
+                    <Grid>
+                        <Grid
+                              ColumnDefinitions="130,*"
+                              RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                              RowSpacing="10">
+
+                            <TextBlock Grid.Row="0"
+                                       Grid.Column="0"
+                                       Grid.ColumnSpan="2"
+                                       Text="Export Summary"
+                                       FontSize="18"
+                                       FontWeight="SemiBold" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Folder:" />
+                            <TextBlock Grid.Row="1"
+                                       Grid.Column="1"
+                                       Text="{Binding FolderStatus}"
+                                       Opacity="0.75" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Memories:" />
+                            <TextBlock Grid.Row="2"
+                                       Grid.Column="1"
+                                       Text="{Binding MemoriesCount}"
+                                       Opacity="0.75" />
+
+	                            <TextBlock Grid.Row="3" Grid.Column="0" Text="JSON:" />
+	                            <TextBlock Grid.Row="3"
+	                                       Grid.Column="1"
+	                                       Text="{Binding JsonStatus}"
+	                                       Opacity="0.75" />
+
+	                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Output:" />
+	                            <TextBlock Grid.Row="4"
+	                                       Grid.Column="1"
+	                                       Text="{Binding OutputStatus}"
+	                                       TextWrapping="Wrap"
+	                                       Opacity="0.75" />
+	                        </Grid>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel Spacing="18">
+                    <TextBlock Text="Processing Progress"
+                               FontSize="18"
+                               FontWeight="SemiBold" />
+
+                    <Grid ColumnDefinitions="150,*" RowDefinitions="Auto" ColumnSpacing="20">
+                        <StackPanel Spacing="8"
+                                    HorizontalAlignment="Center">
+                            <Grid Width="120"
+                                  Height="120">
+                                <controls:CircularProgressRing Width="120"
+                                                               Height="120"
+                                                               Value="{Binding ProgressPercentage}"
+                                                               StrokeThickness="9"
+                                                               TrackBrush="{DynamicResource ProgressTrack}"
+                                                               ProgressBrush="{DynamicResource AppYellow}" />
+                                <Border Width="102"
+                                        Height="102"
+                                        CornerRadius="51"
+                                        Background="{DynamicResource Surface}" />
+                                <TextBlock Text="{Binding ProgressPercentage, StringFormat={}{0:0}%}"
+                                           FontSize="28"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           TextAlignment="Center" />
+                            </Grid>
+
+                            <TextBlock Text="{Binding ProgressStatus}"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center"
+                                       Opacity="0.75" />
+                        </StackPanel>
+
+                        <Grid Grid.Column="1"
+                              VerticalAlignment="Center"
+                              RowDefinitions="Auto,Auto,Auto"
+                              ColumnDefinitions="150,*"
+                              RowSpacing="12">
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Files to process:" />
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FilesToProcess}" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Processed:" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ProcessedFiles}" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Failed:" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding FailedFiles}" />
+                        </Grid>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="24">
+	            
+	            <StackPanel Grid.Column="0" Spacing="10">
+
+			            <Button Classes="secondary-button"
+			                    HorizontalAlignment="Stretch"
+			                    HorizontalContentAlignment="Center"
+			                    Content="⬇  Select Output Folder"
+			                    IsEnabled="{Binding CanChooseOutputFolder}"
+			                    Click="OnSelectOutputFolder" />
+
+		            <TextBlock Text="Choose where to save the processed export"
+		                       HorizontalAlignment="Center"
+		                       TextAlignment="Center"
+		                       Opacity="0.75"/>
+
+	            </StackPanel>
+
+	            <StackPanel Grid.Column="1" Spacing="10">
+
+		                    <Button Classes="primary-button"
+		                            HorizontalAlignment="Stretch"
+		                            HorizontalContentAlignment="Center"
+		                            Content="{Binding PrimaryButtonText}"
+		                            IsEnabled="{Binding CanUsePrimaryButton}"
+		                            Command="{Binding GoCommand}" />
+
+                    <TextBlock Text="{Binding PrimaryButtonHelpText}"
+                               HorizontalAlignment="Center"
+                               Opacity="0.75"/>
+
+                </StackPanel>
+
+            </Grid>
+
+        </StackPanel>
+    </Border>
+</Window>

@@ -1,0 +1,173 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="SnapRestore.App"
+             xmlns:local="using:SnapRestore"
+             RequestedThemeVariant="Default">
+
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <Application.Styles>
+        <FluentTheme />
+
+        <Style Selector="Window">
+            <Setter Property="Background" Value="{DynamicResource Background}" />
+            <Setter Property="FontFamily" Value="Inter, Arial" />
+        </Style>
+
+        <Style Selector="Border.app">
+            <Setter Property="Background" Value="{DynamicResource Background}" />
+        </Style>
+
+        <Style Selector="Border.card">
+            <Setter Property="Padding" Value="24" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Background" Value="{DynamicResource Surface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderColour}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BoxShadow" Value="0 2 10 0 #0D000000" />
+        </Style>
+
+        <Style Selector="Border.icon-circle">
+            <Setter Property="Width" Value="58" />
+            <Setter Property="Height" Value="58" />
+            <Setter Property="CornerRadius" Value="29" />
+            <Setter Property="Background" Value="{DynamicResource AppYellowSoft}" />
+        </Style>
+
+        <Style Selector="Border.progress-circle">
+            <Setter Property="Width" Value="120" />
+            <Setter Property="Height" Value="120" />
+            <Setter Property="CornerRadius" Value="60" />
+            <Setter Property="BorderThickness" Value="9" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ProgressTrack}" />
+            <Setter Property="Background" Value="{DynamicResource Surface}" />
+        </Style>
+
+        <Style Selector="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Text}" />
+        </Style>
+
+        <Style Selector="TextBlock.muted">
+            <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+        </Style>
+
+        <Style Selector="Button.primary-button">
+            <Setter Property="Height" Value="62" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Background" Value="{DynamicResource AppYellow}" />
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppYellow}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Button.primary-button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AppYellow}" />
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppYellow}" />
+            <Setter Property="Opacity" Value="0.65" />
+        </Style>
+
+        <Style Selector="Button.primary-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AppYellow}" />
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppYellow}" />
+        </Style>
+
+        <Style Selector="Button.secondary-button">
+            <Setter Property="Height" Value="62" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Background" Value="{DynamicResource Surface}" />
+            <Setter Property="Foreground" Value="{DynamicResource Text}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppYellow}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Button.secondary-button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AppYellowSoft}" />
+            <Setter Property="Foreground" Value="{DynamicResource Text}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppYellow}" />
+            <Setter Property="Opacity" Value="0.65" />
+        </Style>
+
+        <Style Selector="Button.secondary-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AppYellowSoft}" />
+            <Setter Property="Foreground" Value="{DynamicResource Text}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppYellow}" />
+        </Style>
+
+        <Style Selector="ProgressBar">
+            <Setter Property="Height" Value="8" />
+            <Setter Property="Background" Value="{DynamicResource ProgressTrack}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppYellow}" />
+        </Style>
+    </Application.Styles>
+
+    <Application.Resources>
+        <ResourceDictionary>
+
+            <CornerRadius x:Key="ControlCornerRadius">16</CornerRadius>
+            <CornerRadius x:Key="OverlayCornerRadius">16</CornerRadius>
+
+            <ResourceDictionary.ThemeDictionaries>
+
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="AppYellow">#FEE207</SolidColorBrush>
+                    <SolidColorBrush x:Key="AppYellowSoft">#FEF39D</SolidColorBrush>
+
+                    <SolidColorBrush x:Key="Background">#FDFDFD</SolidColorBrush>
+                    <SolidColorBrush x:Key="Surface">#FDFDFD</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceAlt">#FFFDF4</SolidColorBrush>
+
+                    <SolidColorBrush x:Key="Text">#1A1A1A</SolidColorBrush>
+                    <SolidColorBrush x:Key="TextMuted">#6E6E6E</SolidColorBrush>
+
+                    <SolidColorBrush x:Key="BorderColour">#E8E8E8</SolidColorBrush>
+                    <SolidColorBrush x:Key="ProgressTrack">#E9E9E9</SolidColorBrush>
+                </ResourceDictionary>
+
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="AppYellow">#FEE207</SolidColorBrush>
+                    <SolidColorBrush x:Key="AppYellowSoft">#4A430A</SolidColorBrush>
+
+                    <SolidColorBrush x:Key="Background">#111111</SolidColorBrush>
+                    <SolidColorBrush x:Key="Surface">#1B1B1B</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceAlt">#24210A</SolidColorBrush>
+
+                    <SolidColorBrush x:Key="Text">#F4F4F4</SolidColorBrush>
+                    <SolidColorBrush x:Key="TextMuted">#B8B8B8</SolidColorBrush>
+
+                    <SolidColorBrush x:Key="BorderColour">#2E2E2E</SolidColorBrush>
+                    <SolidColorBrush x:Key="ProgressTrack">#333333</SolidColorBrush>
+                </ResourceDictionary>
+
+            </ResourceDictionary.ThemeDictionaries>
+
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
