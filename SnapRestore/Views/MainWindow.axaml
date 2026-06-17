@@ -18,57 +18,124 @@
     <Border Padding="26" Classes="app">
         <StackPanel Spacing="22">
 
-            <Grid Height="210"
-                  x:Name="DropZone"
-                  Cursor="Hand"
-                  Opacity="{Binding DropZoneOpacity}"
-                  DragDrop.AllowDrop="True"
-                  DragDrop.DragEnter="OnDragEnter"
-                  DragDrop.DragOver="OnDragOver"
-                  DragDrop.DragLeave="OnDragLeave"
-                  DragDrop.Drop="OnDrop"
-                  PointerEntered="OnPointerEntered"
-                  PointerExited="OnPointerExited"
-                  PointerPressed="OnPointerPressed">
+            <Grid Height="190"
+                  ColumnDefinitions="*,*"
+                  ColumnSpacing="18">
 
-                <Grid.Transitions>
-                    <Transitions>
-                        <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
-                    </Transitions>
-                </Grid.Transitions>
+                <Grid x:Name="MemoriesDropZone"
+                      Cursor="Hand"
+                      Opacity="{Binding MemoriesDropZoneOpacity}"
+                      DragDrop.AllowDrop="True"
+                      DragDrop.DragEnter="OnMemoriesDragEnter"
+                      DragDrop.DragOver="OnMemoriesDragOver"
+                      DragDrop.DragLeave="OnMemoriesDragLeave"
+                      DragDrop.Drop="OnMemoriesDrop"
+                      PointerEntered="OnMemoriesPointerEntered"
+                      PointerExited="OnMemoriesPointerExited"
+                      PointerPressed="OnMemoriesPointerPressed">
 
-                <Rectangle
-                    x:Name="DropZoneBorder"
-                    RadiusX="18"
-                    RadiusY="18"
-                    Fill="Transparent"
-                    Stroke="{Binding DropZoneBorderBrush}"
-                    StrokeThickness="2"
-                    StrokeDashArray="1,3"
-                    StrokeLineCap="Round"/>
+                    <Grid.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                        </Transitions>
+                    </Grid.Transitions>
 
-                <StackPanel HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            IsHitTestVisible="False"
-                            Spacing="14">
+                    <Rectangle
+                        RadiusX="18"
+                        RadiusY="18"
+                        Fill="Transparent"
+                        Stroke="{Binding MemoriesDropZoneBorderBrush}"
+                        StrokeThickness="2"
+                        StrokeDashArray="1,3"
+                        StrokeLineCap="Round"/>
 
-                    <TextBlock Text="📁"
-                               FontSize="46"
-                               HorizontalAlignment="Center"/>
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                IsHitTestVisible="False"
+                                Spacing="12"
+                                Margin="18">
 
-                    <TextBlock Text="Drag and drop your Snapchat export here"
-                               FontSize="20"
-                               FontWeight="SemiBold"
-                               HorizontalAlignment="Center"/>
+                        <Viewbox Width="44"
+                                 Height="44"
+                                 HorizontalAlignment="Center">
+                            <Canvas Width="48" Height="48">
+                                <Path Fill="#FFA000"
+                                      Data="M40,12H22l-4-4H8c-2.2,0-4,1.8-4,4v8h40v-4C44,13.8,42.2,12,40,12z"/>
+                                <Path Fill="#FFCA28"
+                                      Data="M40,12H8c-2.2,0-4,1.8-4,4v20c0,2.2,1.8,4,4,4h32c2.2,0,4-1.8,4-4V16C44,13.8,42.2,12,40,12z"/>
+                            </Canvas>
+                        </Viewbox>
 
-                    <TextBlock Text="You can also drop a .zip file and we'll extract it for you."
-                               FontSize="15"
-                               TextWrapping="Wrap"
-                               TextAlignment="Center"
-                               Opacity="0.75"
-                               HorizontalAlignment="Center"/>
+                        <TextBlock Text="Memories folder"
+                                   FontSize="19"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"/>
 
-                </StackPanel>
+                        <TextBlock Text="Drop the Snapchat memories folder here"
+                                   FontSize="14"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"
+                                   Opacity="0.75"
+                                   HorizontalAlignment="Center"/>
+
+                    </StackPanel>
+
+                </Grid>
+
+                <Grid Grid.Column="1"
+                      x:Name="JsonDropZone"
+                      Cursor="Hand"
+                      Opacity="{Binding JsonDropZoneOpacity}"
+                      DragDrop.AllowDrop="True"
+                      DragDrop.DragEnter="OnJsonDragEnter"
+                      DragDrop.DragOver="OnJsonDragOver"
+                      DragDrop.DragLeave="OnJsonDragLeave"
+                      DragDrop.Drop="OnJsonDrop"
+                      PointerEntered="OnJsonPointerEntered"
+                      PointerExited="OnJsonPointerExited"
+                      PointerPressed="OnJsonPointerPressed">
+
+                    <Grid.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                        </Transitions>
+                    </Grid.Transitions>
+
+                    <Rectangle
+                        RadiusX="18"
+                        RadiusY="18"
+                        Fill="Transparent"
+                        Stroke="{Binding JsonDropZoneBorderBrush}"
+                        StrokeThickness="2"
+                        StrokeDashArray="1,3"
+                        StrokeLineCap="Round"/>
+
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                IsHitTestVisible="False"
+                                Spacing="12"
+                                Margin="18">
+
+                        <TextBlock Text="{}{ }"
+                                   FontSize="36"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"/>
+
+                        <TextBlock Text="Memories JSON"
+                                   FontSize="19"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"/>
+
+                        <TextBlock Text="Drop the JSON file here"
+                                   FontSize="14"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"
+                                   Opacity="0.75"
+                                   HorizontalAlignment="Center"/>
+
+                    </StackPanel>
+
+                </Grid>
 
             </Grid>
             
@@ -76,7 +143,7 @@
                 <StackPanel Spacing="18">
                     <Grid>
                         <Grid
-                              ColumnDefinitions="130,*"
+                              ColumnDefinitions="150,*"
                               RowDefinitions="Auto,Auto,Auto,Auto,Auto"
                               RowSpacing="10">
 
@@ -87,19 +154,19 @@
                                        FontSize="18"
                                        FontWeight="SemiBold" />
 
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Folder:" />
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Memories folder:" />
                             <TextBlock Grid.Row="1"
                                        Grid.Column="1"
                                        Text="{Binding FolderStatus}"
                                        Opacity="0.75" />
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Memories:" />
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Media files:" />
                             <TextBlock Grid.Row="2"
                                        Grid.Column="1"
                                        Text="{Binding MemoriesCount}"
                                        Opacity="0.75" />
 
-	                            <TextBlock Grid.Row="3" Grid.Column="0" Text="JSON:" />
+	                            <TextBlock Grid.Row="3" Grid.Column="0" Text="JSON file:" />
 	                            <TextBlock Grid.Row="3"
 	                                       Grid.Column="1"
 	                                       Text="{Binding JsonStatus}"
@@ -193,8 +260,35 @@
 		                            HorizontalAlignment="Stretch"
 		                            HorizontalContentAlignment="Center"
 		                            Content="{Binding PrimaryButtonText}"
+		                            IsVisible="{Binding IsPrimaryActionVisible}"
 		                            IsEnabled="{Binding CanUsePrimaryButton}"
 		                            Command="{Binding GoCommand}" />
+
+		                    <Button Classes="secondary-button"
+		                            HorizontalAlignment="Stretch"
+		                            HorizontalContentAlignment="Center"
+		                            IsVisible="{Binding IsFolderActionVisible}"
+		                            IsEnabled="{Binding CanUsePrimaryButton}"
+		                            Command="{Binding GoCommand}">
+			                    <StackPanel Orientation="Horizontal"
+			                                Spacing="10"
+			                                HorizontalAlignment="Center">
+				                    <Viewbox Width="24"
+				                             Height="24"
+				                             VerticalAlignment="Center">
+					                    <Canvas Width="48" Height="48">
+						                    <Path Fill="#FFA000"
+						                          Data="M40,12H22l-4-4H8c-2.2,0-4,1.8-4,4v8h40v-4C44,13.8,42.2,12,40,12z"/>
+						                    <Path Fill="#FFCA28"
+						                          Data="M40,12H8c-2.2,0-4,1.8-4,4v20c0,2.2,1.8,4,4,4h32c2.2,0,4-1.8,4-4V16C44,13.8,42.2,12,40,12z"/>
+					                    </Canvas>
+				                    </Viewbox>
+				                    <TextBlock Text="Go to Folder"
+				                               FontSize="18"
+				                               FontWeight="SemiBold"
+				                               VerticalAlignment="Center"/>
+			                    </StackPanel>
+		                    </Button>
 
                     <TextBlock Text="{Binding PrimaryButtonHelpText}"
                                HorizontalAlignment="Center"

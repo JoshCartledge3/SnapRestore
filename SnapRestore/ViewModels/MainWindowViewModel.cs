@@ -23,12 +23,15 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
 
     [ObservableProperty] private string _progressStatus = "Idle";
     [ObservableProperty] private string? _exportPath;
+    [ObservableProperty] private string? _jsonPath;
     [ObservableProperty] private string? _outputPath;
     [ObservableProperty] private bool _isProcessing;
     [ObservableProperty] private bool _isProcessComplete;
     
-    [ObservableProperty] private bool _isDragOver;
-    [ObservableProperty] private bool _isDropZonePointerOver;
+    [ObservableProperty] private bool _isMemoriesDragOver;
+    [ObservableProperty] private bool _isMemoriesDropZonePointerOver;
+    [ObservableProperty] private bool _isJsonDragOver;
+    [ObservableProperty] private bool _isJsonDropZonePointerOver;
     
     private SnapchatExportAnalysis? _analysis;
     private CancellationTokenSource? _processingCancellationTokenSource;
@@ -37,23 +40,34 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
 
     #region File Drop Zone
 
-    public IBrush DropZoneBorderBrush => new SolidColorBrush(
-        IsDragOver || IsDropZonePointerOver
+    public IBrush MemoriesDropZoneBorderBrush => new SolidColorBrush(
+        IsMemoriesDragOver || IsMemoriesDropZonePointerOver
             ? Color.Parse("#FEE207")
             : Color.Parse("#E8E8E8"));
 
-    public double DropZoneOpacity => IsDragOver || IsDropZonePointerOver ? 0.65 : 1;
+    public double MemoriesDropZoneOpacity => IsMemoriesDragOver || IsMemoriesDropZonePointerOver ? 0.65 : 1;
 
-    public bool CanChooseOutputFolder => !string.IsNullOrWhiteSpace(ExportPath) && !IsProcessing;
+    public IBrush JsonDropZoneBorderBrush => new SolidColorBrush(
+        IsJsonDragOver || IsJsonDropZonePointerOver
+            ? Color.Parse("#FEE207")
+            : Color.Parse("#E8E8E8"));
+
+    public double JsonDropZoneOpacity => IsJsonDragOver || IsJsonDropZonePointerOver ? 0.65 : 1;
+
+    public bool CanChooseOutputFolder => _analysis?.IsValid == true && !IsProcessing;
 
     public bool CanProcess =>
-        !string.IsNullOrWhiteSpace(ExportPath)
+        _analysis?.IsValid == true
         && !string.IsNullOrWhiteSpace(OutputPath);
 
     public bool CanUsePrimaryButton =>
         IsProcessing
         || IsProcessComplete
         || (CanProcess && !_processTaskActive);
+
+    public bool IsPrimaryActionVisible => !IsProcessComplete;
+
+    public bool IsFolderActionVisible => IsProcessComplete;
 
     public string PrimaryButtonText
     {
@@ -63,7 +77,7 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
                 return "✕  Cancel";
 
             return IsProcessComplete
-                ? "📂  Go to Folder"
+                ? "Go to Folder"
                 : "▶  Go";
         }
     }
@@ -89,6 +103,16 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
     partial void OnExportPathChanged(string? value)
     {
         ResetCompletionState();
+        RefreshAnalysis();
+        OnPropertyChanged(nameof(CanChooseOutputFolder));
+        OnPropertyChanged(nameof(CanProcess));
+        NotifyPrimaryButtonStateChanged();
+    }
+
+    partial void OnJsonPathChanged(string? value)
+    {
+        ResetCompletionState();
+        RefreshAnalysis();
         OnPropertyChanged(nameof(CanChooseOutputFolder));
         OnPropertyChanged(nameof(CanProcess));
         NotifyPrimaryButtonStateChanged();
@@ -113,62 +137,80 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
         NotifyPrimaryButtonStateChanged();
     }
 
-    partial void OnIsDragOverChanged(bool value)
+    partial void OnIsMemoriesDragOverChanged(bool value)
     {
-        OnPropertyChanged(nameof(DropZoneBorderBrush));
-        OnPropertyChanged(nameof(DropZoneOpacity));
+        OnPropertyChanged(nameof(MemoriesDropZoneBorderBrush));
+        OnPropertyChanged(nameof(MemoriesDropZoneOpacity));
     }
 
-    partial void OnIsDropZonePointerOverChanged(bool value)
+    partial void OnIsMemoriesDropZonePointerOverChanged(bool value)
     {
-        OnPropertyChanged(nameof(DropZoneBorderBrush));
-        OnPropertyChanged(nameof(DropZoneOpacity));
+        OnPropertyChanged(nameof(MemoriesDropZoneBorderBrush));
+        OnPropertyChanged(nameof(MemoriesDropZoneOpacity));
     }
 
-    public void DragEnter()
+    partial void OnIsJsonDragOverChanged(bool value)
     {
-        IsDragOver = true;
+        OnPropertyChanged(nameof(JsonDropZoneBorderBrush));
+        OnPropertyChanged(nameof(JsonDropZoneOpacity));
     }
 
-    public void DragLeave()
+    partial void OnIsJsonDropZonePointerOverChanged(bool value)
     {
-        IsDragOver = false;
+        OnPropertyChanged(nameof(JsonDropZoneBorderBrush));
+        OnPropertyChanged(nameof(JsonDropZoneOpacity));
     }
 
-    public void DropZonePointerEnter()
+    public void MemoriesDragEnter()
     {
-        IsDropZonePointerOver = true;
+        IsMemoriesDragOver = true;
     }
 
-    public void DropZonePointerLeave()
+    public void MemoriesDragLeave()
     {
-        IsDropZonePointerOver = false;
+        IsMemoriesDragOver = false;
+    }
+
+    public void MemoriesDropZonePointerEnter()
+    {
+        IsMemoriesDropZonePointerOver = true;
+    }
+
+    public void MemoriesDropZonePointerLeave()
+    {
+        IsMemoriesDropZonePointerOver = false;
+    }
+
+    public void JsonDragEnter()
+    {
+        IsJsonDragOver = true;
+    }
+
+    public void JsonDragLeave()
+    {
+        IsJsonDragOver = false;
+    }
+
+    public void JsonDropZonePointerEnter()
+    {
+        IsJsonDropZonePointerOver = true;
+    }
+
+    public void JsonDropZonePointerLeave()
+    {
+        IsJsonDropZonePointerOver = false;
     }
 
     #endregion
 
-    public void LoadDroppedPath(string path)
+    public void LoadMemoriesFolderPath(string path)
     {
-        _analysis = snapchatExportService.Analyse(path);
+        ExportPath = path;
+    }
 
-        FolderStatus = _analysis.ExportRootPath ?? _analysis.OriginalPath;
-        FilesToProcess = _analysis.MainMediaCount;
-        ProcessedFiles = 0;
-        FailedFiles = 0;
-        ProgressPercentage = 0;
-        JsonStatus = _analysis.JsonFound ? "Found" : _analysis.IsZip ? "Ready to extract" : "Missing";
-        MemoriesCount = _analysis.IsZip ? "Unknown" : _analysis.MainMediaCount.ToString();
-        ProgressStatus = _analysis.StatusMessage;
-        ExportPath = _analysis.IsValid ? _analysis.ExportRootPath ?? _analysis.OriginalPath : null;
-        IsProcessComplete = false;
-        _lastOutputFolder = null;
-
-        if (!_analysis.IsValid)
-        {
-            FilesToProcess = 0;
-            MemoriesCount = _analysis.IsZip ? "Unknown" : "0";
-            OutputPath = null;
-        }
+    public void LoadJsonFilePath(string path)
+    {
+        JsonPath = path;
     }
 
     public void SelectOutputPath(string path)
@@ -268,6 +310,7 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
         _lastOutputFolder = null;
 
         ExportPath = null;
+        JsonPath = null;
         OutputPath = null;
         FolderStatus = "Not loaded";
         MemoriesCount = "–";
@@ -316,8 +359,43 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
     private void NotifyPrimaryButtonStateChanged()
     {
         OnPropertyChanged(nameof(CanUsePrimaryButton));
+        OnPropertyChanged(nameof(IsPrimaryActionVisible));
+        OnPropertyChanged(nameof(IsFolderActionVisible));
         OnPropertyChanged(nameof(PrimaryButtonText));
         OnPropertyChanged(nameof(PrimaryButtonHelpText));
+    }
+
+    private void RefreshAnalysis()
+    {
+        ProcessedFiles = 0;
+        FailedFiles = 0;
+        ProgressPercentage = 0;
+        IsProcessComplete = false;
+        _lastOutputFolder = null;
+
+        var hasMemoriesPath = !string.IsNullOrWhiteSpace(ExportPath);
+        var hasJsonPath = !string.IsNullOrWhiteSpace(JsonPath);
+
+        FolderStatus = hasMemoriesPath ? ExportPath! : "Not loaded";
+        JsonStatus = hasJsonPath ? JsonPath! : "Not selected";
+
+        if (!hasMemoriesPath)
+        {
+            _analysis = null;
+            FilesToProcess = 0;
+            MemoriesCount = "–";
+            ProgressStatus = hasJsonPath
+                ? "Select memories folder"
+                : "Idle";
+            return;
+        }
+
+        _analysis = snapchatExportService.Analyse(ExportPath!, JsonPath ?? string.Empty);
+        FilesToProcess = _analysis.MainMediaCount;
+        MemoriesCount = _analysis.MainMediaCount.ToString();
+        ProgressStatus = hasJsonPath
+            ? _analysis.StatusMessage
+            : "Select JSON file";
     }
 
     [RelayCommand]
