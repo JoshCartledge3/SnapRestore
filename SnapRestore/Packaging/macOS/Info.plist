@@ -11,7 +11,7 @@
     <key>CFBundleIdentifier</key>
     <string>com.snaprestore.app</string>
     <key>CFBundleIconFile</key>
-    <string>snaprestore.icns</string>
+    <string>SnapRestore.icns</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundlePackageType</key>

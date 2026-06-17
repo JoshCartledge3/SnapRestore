@@ -10,7 +10,7 @@
         MaxHeight="825"
         MinWidth="700"
         MinHeight="825"
-        Icon="/Assets/Icons/snaprestore.ico"
+        Icon="/Assets/Icons/SnapRestore.png"
         Title="SnapRestore">
 
     <Border Padding="26" Classes="app">
