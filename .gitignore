@@ -1,0 +1,6 @@
+bin/
+obj/
+artifacts/
+.idea/
+*.DotSettings.user
+.DS_Store
