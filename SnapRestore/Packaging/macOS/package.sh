@@ -30,7 +30,7 @@ mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 cp -R "$PUBLISH_DIR"/. "$MACOS_DIR"
 cp "$SCRIPT_DIR/Info.plist" "$CONTENTS_DIR/Info.plist"
-cp "$PROJECT_DIR/Assets/Icons/snaprestore.icns" "$RESOURCES_DIR/snaprestore.icns"
+cp "$PROJECT_DIR/Assets/Icons/SnapRestore.icns" "$RESOURCES_DIR/SnapRestore.icns"
 
 if [ -d "$MACOS_DIR/Tools" ]; then
   find "$MACOS_DIR/Tools" -mindepth 1 -maxdepth 1 -type d ! -name "$RUNTIME" -exec rm -rf {} +
