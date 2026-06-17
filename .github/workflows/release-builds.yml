@@ -102,7 +102,6 @@ jobs:
             -c Release `
             -r win-x64 `
             --self-contained true `
-            --no-restore `
             -o $publishDir `
             /p:Version=$version `
             /p:AssemblyVersion=$version `
