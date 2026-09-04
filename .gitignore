@@ -38,6 +38,15 @@ ScaffoldingReadMe.txt
 
 # dotenv environment variables file
 .env
+.env.*
+!.env.example
+
+# Signing certificates and private keys
+*.pfx
+*.p12
+*.snk
+*.key
+*.pem
 
 # Others
 ~$*

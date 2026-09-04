@@ -1,9 +1,8 @@
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using FFMpegCore;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -12,17 +11,11 @@ using SnapRestore.Services.Abstraction;
 
 namespace SnapRestore.Services;
 
-public class OverlayService : IOverlayService
+public sealed class OverlayService(
+    IExternalToolResolver externalToolResolver,
+    IExternalProcessRunner processRunner) : IOverlayService
 {
-    public OverlayService(IExternalToolResolver externalToolResolver)
-    {
-        var ffmpegDirectory = externalToolResolver.GetFfmpegDirectory();
-
-        if (!string.IsNullOrWhiteSpace(ffmpegDirectory))
-        {
-            GlobalFFOptions.Configure(options => options.BinaryFolder = ffmpegDirectory);
-        }
-    }
+    private static readonly TimeSpan VideoTimeout = TimeSpan.FromMinutes(30);
 
     public async Task<bool> ApplyOverlayIfPresentAsync(
         string sourceFile,
@@ -44,9 +37,14 @@ public class OverlayService : IOverlayService
             {
                 await FlattenImageOverlayAsync(sourceFile, overlayFile, destinationFile, cancellationToken);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                TryDelete(destinationFile);
+                throw;
+            }
             catch (Exception ex)
             {
-                File.Copy(sourceFile, destinationFile, overwrite: false);
+                File.Copy(sourceFile, destinationFile, overwrite: true);
                 await AppendOverlayWarningAsync(reportFile, sourceFile, overlayFile, ex.Message, cancellationToken);
                 return false;
             }
@@ -56,10 +54,14 @@ public class OverlayService : IOverlayService
 
         if (sourceFile.IsVideoFile())
         {
-            var failureReason = await BurnVideoOverlayAsync(sourceFile, overlayFile, destinationFile);
+            var failureReason = await BurnVideoOverlayAsync(
+                sourceFile,
+                overlayFile,
+                destinationFile,
+                cancellationToken);
             if (failureReason is not null)
             {
-                File.Copy(sourceFile, destinationFile, overwrite: false);
+                File.Copy(sourceFile, destinationFile, overwrite: true);
                 await AppendOverlayWarningAsync(reportFile, sourceFile, overlayFile, failureReason, cancellationToken);
                 return false;
             }
@@ -125,35 +127,77 @@ public class OverlayService : IOverlayService
         await mainImage.SaveAsync(destinationFile, cancellationToken);
     }
 
-    private static async Task<string?> BurnVideoOverlayAsync(
+    private async Task<string?> BurnVideoOverlayAsync(
         string videoFile,
         string overlayFile,
-        string destinationFile)
+        string destinationFile,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var success = await FFMpegArguments
-                .FromFileInput(videoFile)
-                .AddFileInput(overlayFile)
-                .OutputToFile(
-                    destinationFile,
-                    overwrite: true,
-                    options => options
-                        .WithCustomArgument("-filter_complex \"[0:v][1:v]overlay=0:0:format=auto\"")
-                        .WithVideoCodec("libx264")
-                        .WithCustomArgument("-crf 18")
-                        .WithCustomArgument("-preset veryfast")
-                        .WithCustomArgument("-c:a copy")
-                        .WithFastStart())
-                .ProcessAsynchronously();
+            var arguments = new List<string>
+            {
+                "-hide_banner",
+                "-loglevel", "error",
+                "-y",
+                "-i", videoFile,
+                "-i", overlayFile,
+                "-filter_complex", "[0:v][1:v]overlay=0:0:format=auto"
+            };
 
-            return success
+            if (OperatingSystem.IsMacOS())
+            {
+                // Use FFmpeg's built-in software encoder so processing also works
+                // when VideoToolbox is unavailable (for example in a VM).
+                arguments.AddRange(["-c:v", "mpeg4", "-q:v", "2"]);
+            }
+            else
+            {
+                arguments.AddRange(["-c:v", "libx264", "-crf", "18", "-preset", "veryfast"]);
+            }
+
+            arguments.AddRange([
+                "-c:a", "copy",
+                "-movflags", "+faststart",
+                destinationFile
+            ]);
+
+            var result = await processRunner.RunAsync(
+                externalToolResolver.GetFfmpegPath(),
+                arguments,
+                VideoTimeout,
+                cancellationToken);
+
+            return result.ExitCode == 0
                 ? null
-                : $"Failed to burn overlay onto video '{Path.GetFileName(videoFile)}'.";
+                : string.IsNullOrWhiteSpace(result.StandardError)
+                    ? $"Failed to burn overlay onto video '{Path.GetFileName(videoFile)}'."
+                    : result.StandardError.Trim();
+        }
+        catch (OperationCanceledException)
+        {
+            TryDelete(destinationFile);
+            throw;
         }
         catch (Exception ex)
         {
             return ex.Message;
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+            // Preserve the cancellation or processing error that triggered cleanup.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Preserve the cancellation or processing error that triggered cleanup.
         }
     }
 

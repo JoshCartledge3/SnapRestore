@@ -30,6 +30,7 @@ public partial class App : Application
             services.AddSingleton<IMemoriesHistoryService, MemoriesHistoryService>();
             services.AddSingleton<IExifToolService, ExifToolService>();
             services.AddSingleton<IExternalToolResolver, ExternalToolResolver>();
+            services.AddSingleton<IExternalProcessRunner, ExternalProcessRunner>();
 
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();

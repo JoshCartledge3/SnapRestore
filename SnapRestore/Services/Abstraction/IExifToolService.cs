@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using SnapRestore.Models;
@@ -10,9 +11,10 @@ public interface IExifToolService
         string filePath,
         CancellationToken cancellationToken = default);
     
-    Task WriteGpsAsync(
+    Task WriteMetadataAsync(
         string filePath,
-        double latitude,
-        double longitude,
+        DateTime captureDateUtc,
+        double? latitude,
+        double? longitude,
         CancellationToken cancellationToken = default);
 }

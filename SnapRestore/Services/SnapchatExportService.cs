@@ -61,12 +61,12 @@ public class SnapchatExportService : ISnapchatExportService
             return new SnapchatExportAnalysis
             {
                 OriginalPath = path,
-                IsValid = true,
+                IsValid = false,
                 IsZip = true,
                 JsonFound = false,
                 MemoriesFolderFound = false,
                 MainMediaCount = 0,
-                StatusMessage = "ZIP ready"
+                StatusMessage = "ZIP files are not supported; extract it first"
             };
         }
 

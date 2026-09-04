@@ -32,7 +32,19 @@ jobs:
         run: dotnet restore SnapRestore/SnapRestore.csproj -r ${{ matrix.runtime }}
 
       - name: Test
-        run: dotnet test --configuration Release --no-restore
+        run: dotnet test SnapRestore.slnx --configuration Release
+
+      - name: Verify FFmpeg is redistributable
+        run: |
+          configuration="$(SnapRestore/Tools/${{ matrix.runtime }}/ffmpeg -version 2>&1 | head -n 3)"
+          if printf '%s' "$configuration" | grep -q -- '--enable-nonfree'; then
+            echo "The bundled FFmpeg build is marked nonfree and cannot be published."
+            exit 1
+          fi
+          if ! SnapRestore/Tools/${{ matrix.runtime }}/ffmpeg -hide_banner -encoders 2>/dev/null | grep -q ' mpeg4 ' ; then
+            echo "The bundled macOS FFmpeg build lacks the MPEG-4 encoder."
+            exit 1
+          fi
 
       - name: Build DMG
         env:
@@ -87,7 +99,19 @@ jobs:
 
       - name: Test
         shell: pwsh
-        run: dotnet test --configuration Release --no-restore
+        run: dotnet test SnapRestore.slnx --configuration Release
+
+      - name: Verify FFmpeg is redistributable
+        shell: pwsh
+        run: |
+          $configuration = & SnapRestore/Tools/win-x64/ffmpeg.exe -version 2>&1 | Out-String
+          if ($configuration.Contains("--enable-nonfree")) {
+            throw "The bundled FFmpeg build is marked nonfree and cannot be published."
+          }
+          $encoders = & SnapRestore/Tools/win-x64/ffmpeg.exe -hide_banner -encoders 2>&1 | Out-String
+          if (!$encoders.Contains("libx264")) {
+            throw "The bundled Windows FFmpeg build lacks libx264."
+          }
 
       - name: Publish Windows build
         shell: pwsh

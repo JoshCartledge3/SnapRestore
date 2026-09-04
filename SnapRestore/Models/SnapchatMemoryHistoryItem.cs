@@ -11,8 +11,6 @@ public sealed class SnapchatMemoryHistoryItem
     public double? Longitude { get; init; }
 
     public bool HasValidLocation =>
-        Latitude is not null &&
-        Longitude is not null &&
-        Latitude != 0 &&
-        Longitude != 0;
+        Latitude is >= -90 and <= 90 &&
+        Longitude is >= -180 and <= 180;
 }

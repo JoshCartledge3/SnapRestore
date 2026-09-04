@@ -84,15 +84,8 @@ public sealed class MemoriesHistoryService : IMemoriesHistoryService
             }
         }
 
-        foreach (var property in root.EnumerateObject())
-        {
-            if (property.Value.ValueKind == JsonValueKind.Array)
-            {
-                return property.Value.EnumerateArray();
-            }
-        }
-
-        return [];
+        throw new InvalidDataException(
+            "The JSON file does not contain a recognised Snapchat memories history collection.");
     }
 
     private static (double? Latitude, double? Longitude) ReadLocation(JsonElement element)

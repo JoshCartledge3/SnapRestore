@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text.Json;
@@ -10,47 +9,39 @@ using SnapRestore.Services.Abstraction;
 
 namespace SnapRestore.Services;
 
-public sealed class ExifToolService(IExternalToolResolver externalToolResolver) : IExifToolService
+public sealed class ExifToolService(
+    IExternalToolResolver externalToolResolver,
+    IExternalProcessRunner processRunner) : IExifToolService
 {
+    private static readonly TimeSpan ReadTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan WriteTimeout = TimeSpan.FromSeconds(30);
+
     public async Task<MediaMetadata> ReadMetadataAsync(
         string filePath,
         CancellationToken cancellationToken = default)
     {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = externalToolResolver.GetExifToolPath(),
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false
-        };
+        var result = await processRunner.RunAsync(
+            externalToolResolver.GetExifToolPath(),
+            [
+                "-json",
+                "-CreateDate",
+                "-FileModifyDate",
+                "-d",
+                "%Y-%m-%d %H:%M:%S%z",
+                filePath
+            ],
+            ReadTimeout,
+            cancellationToken);
 
-        startInfo.ArgumentList.Add("-json");
-        startInfo.ArgumentList.Add("-CreateDate");
-        startInfo.ArgumentList.Add("-FileModifyDate");
-        startInfo.ArgumentList.Add("-d");
-        startInfo.ArgumentList.Add("%Y-%m-%d %H:%M:%S%z");
-        startInfo.ArgumentList.Add(filePath);
-
-        using var process = Process.Start(startInfo)
-                            ?? throw new InvalidOperationException("Failed to start exiftool.");
-
-        var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
-
-        await process.WaitForExitAsync(cancellationToken);
-
-        var output = await outputTask;
-        var error = await errorTask;
-
-        if (process.ExitCode != 0)
+        if (result.ExitCode != 0)
         {
             throw new InvalidOperationException(
-                string.IsNullOrWhiteSpace(error)
+                string.IsNullOrWhiteSpace(result.StandardError)
                     ? $"exiftool failed for '{filePath}'."
-                    : error.Trim());
+                    : result.StandardError.Trim());
         }
 
-        using var document = JsonDocument.Parse(output);
+        using var document = JsonDocument.Parse(result.StandardOutput);
         var root = document.RootElement;
 
         if (root.ValueKind != JsonValueKind.Array || root.GetArrayLength() == 0)
@@ -94,55 +85,72 @@ public sealed class ExifToolService(IExternalToolResolver externalToolResolver) 
             : null;
     }
     
-    public async Task WriteGpsAsync(
+    public async Task WriteMetadataAsync(
         string filePath,
-        double latitude,
-        double longitude,
+        DateTime captureDateUtc,
+        double? latitude,
+        double? longitude,
         CancellationToken cancellationToken = default)
     {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = externalToolResolver.GetExifToolPath(),
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false
-        };
-
-        startInfo.ArgumentList.Add("-overwrite_original");
+        var arguments = new System.Collections.Generic.List<string> { "-overwrite_original" };
+        var timestamp = captureDateUtc.ToUniversalTime().ToString("yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture);
 
         if (IsVideoFile(filePath))
         {
-            startInfo.ArgumentList.Add($"-Keys:GPSCoordinates={latitude.ToString(CultureInfo.InvariantCulture)},{longitude.ToString(CultureInfo.InvariantCulture)}");
+            arguments.Add("-api");
+            arguments.Add("QuickTimeUTC=1");
+            arguments.Add($"-QuickTime:CreateDate={timestamp}");
+            arguments.Add($"-QuickTime:ModifyDate={timestamp}");
+            arguments.Add($"-TrackCreateDate={timestamp}");
+            arguments.Add($"-TrackModifyDate={timestamp}");
+            arguments.Add($"-MediaCreateDate={timestamp}");
+            arguments.Add($"-MediaModifyDate={timestamp}");
+
+            if (latitude is not null && longitude is not null)
+            {
+                arguments.Add(
+                    $"-Keys:GPSCoordinates={latitude.Value.ToString(CultureInfo.InvariantCulture)},{longitude.Value.ToString(CultureInfo.InvariantCulture)}");
+            }
         }
         else
         {
-            var latitudeRef = latitude < 0 ? "S" : "N";
-            var longitudeRef = longitude < 0 ? "W" : "E";
-            var absoluteLatitude = Math.Abs(latitude).ToString(CultureInfo.InvariantCulture);
-            var absoluteLongitude = Math.Abs(longitude).ToString(CultureInfo.InvariantCulture);
+            arguments.Add($"-DateTimeOriginal={timestamp}");
+            arguments.Add($"-CreateDate={timestamp}");
+            arguments.Add($"-ModifyDate={timestamp}");
 
-            startInfo.ArgumentList.Add($"-GPSLatitude={absoluteLatitude}");
-            startInfo.ArgumentList.Add($"-GPSLatitudeRef={latitudeRef}");
-            startInfo.ArgumentList.Add($"-GPSLongitude={absoluteLongitude}");
-            startInfo.ArgumentList.Add($"-GPSLongitudeRef={longitudeRef}");
-            startInfo.ArgumentList.Add($"-XMP:GPSLatitude={latitude.ToString(CultureInfo.InvariantCulture)}");
-            startInfo.ArgumentList.Add($"-XMP:GPSLongitude={longitude.ToString(CultureInfo.InvariantCulture)}");
+            if (latitude is not null && longitude is not null)
+            {
+                var latitudeRef = latitude < 0 ? "S" : "N";
+                var longitudeRef = longitude < 0 ? "W" : "E";
+                var absoluteLatitude = Math.Abs(latitude.Value).ToString(CultureInfo.InvariantCulture);
+                var absoluteLongitude = Math.Abs(longitude.Value).ToString(CultureInfo.InvariantCulture);
+
+                arguments.Add($"-GPSLatitude={absoluteLatitude}");
+                arguments.Add($"-GPSLatitudeRef={latitudeRef}");
+                arguments.Add($"-GPSLongitude={absoluteLongitude}");
+                arguments.Add($"-GPSLongitudeRef={longitudeRef}");
+                arguments.Add($"-XMP:GPSLatitude={latitude.Value.ToString(CultureInfo.InvariantCulture)}");
+                arguments.Add($"-XMP:GPSLongitude={longitude.Value.ToString(CultureInfo.InvariantCulture)}");
+            }
         }
 
-        startInfo.ArgumentList.Add(filePath);
+        arguments.Add(filePath);
 
-        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start exiftool.");
+        var result = await processRunner.RunAsync(
+            externalToolResolver.GetExifToolPath(),
+            arguments,
+            WriteTimeout,
+            cancellationToken);
 
-        var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
-
-        await process.WaitForExitAsync(cancellationToken);
-
-        var error = await errorTask;
-
-        if (process.ExitCode != 0)
+        if (result.ExitCode != 0)
         {
-            throw new InvalidOperationException(error.Trim());
+            throw new InvalidOperationException(
+                string.IsNullOrWhiteSpace(result.StandardError)
+                    ? $"exiftool failed for '{filePath}'."
+                    : result.StandardError.Trim());
         }
+
+        File.SetLastWriteTimeUtc(filePath, captureDateUtc);
     }
     
     private static bool IsVideoFile(string path)

@@ -87,7 +87,7 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
         get
         {
             if (IsProcessing)
-                return "Stop after the current file";
+                return "Stop processing";
 
             return IsProcessComplete
                 ? "Open processed output"
@@ -300,32 +300,7 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
     private void CancelProcessing()
     {
         _processingCancellationTokenSource?.Cancel();
-        IsProcessing = false;
-        ResetWorkflowState("Cancelled");
-    }
-
-    private void ResetWorkflowState(string progressStatus)
-    {
-        _analysis = null;
-        _lastOutputFolder = null;
-
-        ExportPath = null;
-        JsonPath = null;
-        OutputPath = null;
-        FolderStatus = "Not loaded";
-        MemoriesCount = "–";
-        JsonStatus = "–";
-        FilesToProcess = 0;
-        ProcessedFiles = 0;
-        FailedFiles = 0;
-        ProgressPercentage = 0;
-        ProgressStatus = progressStatus;
-        IsProcessComplete = false;
-
-        OnPropertyChanged(nameof(CanChooseOutputFolder));
-        OnPropertyChanged(nameof(CanProcess));
-        OnPropertyChanged(nameof(OutputStatus));
-        NotifyPrimaryButtonStateChanged();
+        ProgressStatus = "Cancelling...";
     }
 
     private void OpenLastOutputFolder()
@@ -396,11 +371,5 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
         ProgressStatus = hasJsonPath
             ? _analysis.StatusMessage
             : "Select JSON file";
-    }
-
-    [RelayCommand]
-    private async Task SelectOutputFolder()
-    {
-        await Task.CompletedTask;
     }
 }

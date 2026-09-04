@@ -11,7 +11,7 @@ using SnapRestore.Services.Abstraction;
 
 namespace SnapRestore.Services;
 
-public class MemoryProcessingService(
+public sealed class MemoryProcessingService(
     IOverlayService overlayService,
     IMemoriesHistoryService memoriesHistoryService,
     IExifToolService exifToolService) : IMemoryProcessingService
@@ -29,9 +29,7 @@ public class MemoryProcessingService(
             return null;
         }
 
-        var outputFolder = Path.Combine(
-            outputPath,
-            $"SnapRestore-{DateTime.Now:yyyyMMdd-HHmmss}");
+        var outputFolder = CreateUniqueOutputFolder(outputPath);
 
         Directory.CreateDirectory(outputFolder);
         var reportFile = Path.Combine(outputFolder, "Report.txt");
@@ -50,10 +48,11 @@ public class MemoryProcessingService(
         }
 
         var memories = await memoriesHistoryService.ParseAsync(analysis.MemoriesHistoryJsonPath, cancellationToken);
+        var memoryMatcher = new MemoryMatcher(memories);
 
         var files = analysis.MainMediaFiles
             .OrderBy(GetDateFromFileName)
-            .ThenBy(Path.GetFileName)
+            .ThenBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         var totalFiles = files.Count;
@@ -70,79 +69,109 @@ public class MemoryProcessingService(
 
         var dailyIndexes = new Dictionary<DateOnly, int>();
 
-        for (var i = 0; i < files.Count; i++)
+        try
         {
-            if (cancellationToken.IsCancellationRequested)
-                break;
-
-            var sourceFile = files[i];
-
-            try
+            for (var i = 0; i < files.Count; i++)
             {
-                var metadata = await exifToolService.ReadMetadataAsync(sourceFile, CancellationToken.None);
-                var mediaType = GetMediaType(sourceFile);
+                cancellationToken.ThrowIfCancellationRequested();
+                var sourceFile = files[i];
+                var fileFailed = false;
 
-                var matchedMemory =
-                    FindMatchingMemory(memories, mediaType, metadata.CreateDateUtc)
-                    ?? FindMatchingMemory(memories, mediaType, metadata.FileModifyDateUtc);
-
-                if (matchedMemory is null)
+                try
                 {
-                    await AppendNoMatchingMemoryAsync(reportFile, sourceFile, mediaType, CancellationToken.None);
-                }
+                    MediaMetadata metadata;
+                    try
+                    {
+                        metadata = await exifToolService.ReadMetadataAsync(sourceFile, cancellationToken);
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        metadata = new MediaMetadata();
+                        fileFailed = true;
+                        await AppendFailureAsync(reportFile, sourceFile, ex, CancellationToken.None);
+                    }
 
-                var fileDate = GetDateFromFileName(sourceFile);
-                var nextIndex = dailyIndexes.GetValueOrDefault(fileDate) + 1;
-                dailyIndexes[fileDate] = nextIndex;
+                    var mediaType = GetMediaType(sourceFile);
+                    var matchedMemory = memoryMatcher.Match(
+                        mediaType,
+                        metadata.CreateDateUtc,
+                        metadata.FileModifyDateUtc);
 
-                var extension = Path.GetExtension(sourceFile).ToLowerInvariant();
+                    if (matchedMemory is null)
+                    {
+                        await AppendNoMatchingMemoryAsync(reportFile, sourceFile, mediaType, cancellationToken);
+                    }
 
-                var outputFileName = $"{fileDate:yyyy-MM-dd}_{nextIndex}{extension}";
-                var destinationFile = Path.Combine(outputFolder, outputFileName);
+                    var captureDateUtc = matchedMemory?.DateUtc;
+                    var fileDate = captureDateUtc is not null
+                        ? DateOnly.FromDateTime(captureDateUtc.Value)
+                        : GetDateFromFileName(sourceFile);
+                    var nextIndex = dailyIndexes.GetValueOrDefault(fileDate) + 1;
+                    dailyIndexes[fileDate] = nextIndex;
 
-                var success = await overlayService.ApplyOverlayIfPresentAsync(
-                    sourceFile,
-                    destinationFile,
-                    reportFile,
-                    CancellationToken.None);
+                    var extension = Path.GetExtension(sourceFile).ToLowerInvariant();
+                    var outputFileName = captureDateUtc is not null
+                        ? $"{captureDateUtc:yyyy-MM-dd_HHmmss}_{nextIndex}{extension}"
+                        : $"{fileDate:yyyy-MM-dd}_{nextIndex}{extension}";
+                    var destinationFile = Path.Combine(outputFolder, outputFileName);
 
-                if (!success)
-                {
-                    failedFiles++;
-                }
-                
-                if (matchedMemory?.HasValidLocation == true)
-                {
-                    await exifToolService.WriteGpsAsync(
+                    var overlaySucceeded = await overlayService.ApplyOverlayIfPresentAsync(
+                        sourceFile,
                         destinationFile,
-                        matchedMemory.Latitude!.Value,
-                        matchedMemory.Longitude!.Value,
-                        CancellationToken.None);
+                        reportFile,
+                        cancellationToken);
+                    fileFailed |= !overlaySucceeded;
+
+                    if (matchedMemory is not null)
+                    {
+                        await exifToolService.WriteMetadataAsync(
+                            destinationFile,
+                            matchedMemory.DateUtc,
+                            matchedMemory.HasValidLocation ? matchedMemory.Latitude : null,
+                            matchedMemory.HasValidLocation ? matchedMemory.Longitude : null,
+                            cancellationToken);
+                    }
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    fileFailed = true;
+                    await AppendFailureAsync(reportFile, sourceFile, ex, CancellationToken.None);
+                }
+
+                if (fileFailed)
+                    failedFiles++;
+
+                processedFiles = i + 1;
+
+                progress.Report(new ProcessingProgress
+                {
+                    TotalFiles = totalFiles,
+                    ProcessedFiles = processedFiles,
+                    FailedFiles = failedFiles
+                });
             }
-            catch (Exception ex)
-            {
-                failedFiles++;
-                await AppendFailureAsync(reportFile, sourceFile, ex, CancellationToken.None);
-            }
-
-            processedFiles = i + 1;
-
-            progress.Report(new ProcessingProgress
-            {
-                TotalFiles = totalFiles,
-                ProcessedFiles = processedFiles,
-                FailedFiles = failedFiles
-            });
-
-            await Task.Yield();
         }
-
-        var successfulFiles = processedFiles - failedFiles;
-        await File.AppendAllTextAsync(
-            reportFile,
-            $"\nSummary\nSuccess: {successfulFiles}\nFailed: {failedFiles}\n",
-            CancellationToken.None);
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await File.AppendAllTextAsync(reportFile, "\nProcessing cancelled by user.\n", CancellationToken.None);
+            throw;
+        }
+        finally
+        {
+            var successfulFiles = processedFiles - failedFiles;
+            await File.AppendAllTextAsync(
+                reportFile,
+                $"\nSummary\nProcessed: {processedFiles}/{totalFiles}\nSuccess: {successfulFiles}\nFailed: {failedFiles}\n",
+                CancellationToken.None);
+        }
 
         return outputFolder;
     }
@@ -172,25 +201,16 @@ public class MemoryProcessingService(
             : "Image";
     }
 
-    private static SnapchatMemoryHistoryItem? FindMatchingMemory(
-        IReadOnlyList<SnapchatMemoryHistoryItem> memories,
-        string mediaType,
-        DateTime? fileDateUtc)
+    private static string CreateUniqueOutputFolder(string outputPath)
     {
-        if (fileDateUtc is null)
-            return null;
+        var baseName = $"SnapRestore-{DateTime.Now:yyyyMMdd-HHmmss-fff}";
+        var candidate = Path.Combine(outputPath, baseName);
+        var suffix = 1;
 
-        return memories
-            .Where(x => x.MediaType.Equals(mediaType, StringComparison.OrdinalIgnoreCase))
-            .Select(x => new
-            {
-                Memory = x,
-                Difference = Math.Abs((x.DateUtc - fileDateUtc.Value).TotalSeconds)
-            })
-            .Where(x => x.Difference <= 60)
-            .OrderBy(x => x.Difference)
-            .Select(x => x.Memory)
-            .FirstOrDefault();
+        while (Directory.Exists(candidate))
+            candidate = Path.Combine(outputPath, $"{baseName}-{suffix++}");
+
+        return candidate;
     }
     
     private static Task AppendFailureAsync(

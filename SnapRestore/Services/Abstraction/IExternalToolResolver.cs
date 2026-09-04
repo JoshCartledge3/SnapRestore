@@ -4,5 +4,5 @@ public interface IExternalToolResolver
 {
     string GetExifToolPath();
 
-    string? GetFfmpegDirectory();
+    string GetFfmpegPath();
 }

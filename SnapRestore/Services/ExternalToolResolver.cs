@@ -14,14 +14,9 @@ public sealed class ExternalToolResolver : IExternalToolResolver
                ?? "exiftool";
     }
 
-    public string? GetFfmpegDirectory()
-    {
-        var ffmpegPath = FindTool(IsWindows ? "ffmpeg.exe" : "ffmpeg");
-
-        return ffmpegPath is null
-            ? null
-            : Path.GetDirectoryName(ffmpegPath);
-    }
+    public string GetFfmpegPath() =>
+        FindTool(IsWindows ? "ffmpeg.exe" : "ffmpeg")
+        ?? "ffmpeg";
 
     private static string? FindTool(string executableName)
     {

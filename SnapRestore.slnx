@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="SnapRestore/SnapRestore.csproj" />
+  <Project Path="SnapRestore.Tests/SnapRestore.Tests.csproj" />
 </Solution>
