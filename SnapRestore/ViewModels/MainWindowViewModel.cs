@@ -91,7 +91,7 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
 
             return IsProcessComplete
                 ? "Open processed output"
-                : "Start geotagging process";
+                : "Start restore process";
         }
     }
 
@@ -352,7 +352,7 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
         var hasJsonPath = !string.IsNullOrWhiteSpace(JsonPath);
 
         FolderStatus = hasMemoriesPath ? ExportPath! : "Not loaded";
-        JsonStatus = hasJsonPath ? JsonPath! : "Not selected";
+        JsonStatus = hasJsonPath ? JsonPath! : "Not selected (optional)";
 
         if (!hasMemoriesPath)
         {
@@ -368,8 +368,6 @@ public partial class MainWindowViewModel(ISnapchatExportService snapchatExportSe
         _analysis = snapchatExportService.Analyse(ExportPath!, JsonPath ?? string.Empty);
         FilesToProcess = _analysis.MainMediaCount;
         MemoriesCount = _analysis.MainMediaCount.ToString();
-        ProgressStatus = hasJsonPath
-            ? _analysis.StatusMessage
-            : "Select JSON file";
+        ProgressStatus = _analysis.StatusMessage;
     }
 }

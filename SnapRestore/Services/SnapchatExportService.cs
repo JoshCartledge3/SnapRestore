@@ -25,7 +25,7 @@ public class SnapchatExportService : ISnapchatExportService
                 .ToList()
             : [];
 
-        var isValid = memoriesFound && jsonFound && mainMediaFiles.Count > 0;
+        var isValid = memoriesFound && mainMediaFiles.Count > 0;
 
         return new SnapchatExportAnalysis
         {
@@ -42,9 +42,9 @@ public class SnapchatExportService : ISnapchatExportService
             StatusMessage = (memoriesFound, jsonFound, mainMediaFiles.Count) switch
             {
                 (false, _, _) => "Memories folder missing",
-                (_, false, _) => "JSON file missing",
                 (_, _, 0) => "No media found",
-                _ => "Ready"
+                (_, false, _) => "Ready (metadata will be skipped)",
+                _ => "Ready with metadata"
             }
         };
     }
@@ -100,7 +100,7 @@ public class SnapchatExportService : ISnapchatExportService
 
         var mainMediaCount = mainMediaFiles.Count;
         
-        var isValid = memoriesFound && jsonFound;
+        var isValid = memoriesFound && mainMediaCount > 0;
 
         return new SnapchatExportAnalysis
         {
@@ -114,9 +114,13 @@ public class SnapchatExportService : ISnapchatExportService
             MemoriesFolderFound = memoriesFound,
             MainMediaFiles =  mainMediaFiles,
             MainMediaCount = mainMediaCount,
-            StatusMessage = isValid
-                ? mainMediaCount > 0 ? "Folder ready" : "No media found"
-                : "Export structure not found"
+            StatusMessage = !memoriesFound
+                ? "Export structure not found"
+                : mainMediaCount == 0
+                    ? "No media found"
+                    : jsonFound
+                        ? "Folder ready with metadata"
+                        : "Folder ready (metadata will be skipped)"
         };
     }
 

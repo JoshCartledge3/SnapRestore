@@ -26,5 +26,7 @@ dotnet test SnapRestore.slnx
 
 ## Supported input
 
-Select the extracted `memories` directory and its corresponding
-`memories_history.json`.
+Select the extracted `memories` directory and an output folder. The corresponding
+`memories_history.json` is optional: when supplied, SnapRestore restores capture
+dates and locations; without it, SnapRestore restores the media and overlays but
+skips metadata matching and writing.

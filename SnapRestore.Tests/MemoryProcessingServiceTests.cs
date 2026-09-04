@@ -7,6 +7,46 @@ namespace SnapRestore.Tests;
 public sealed class MemoryProcessingServiceTests
 {
     [Fact]
+    public async Task ProcessAsync_WithoutJson_RestoresMediaWithoutUsingMetadataServices()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"snaprestore-test-{Guid.NewGuid():N}");
+        var memoriesDirectory = Path.Combine(root, "memories");
+        var outputDirectory = Path.Combine(root, "output");
+        Directory.CreateDirectory(memoriesDirectory);
+        Directory.CreateDirectory(outputDirectory);
+        var source = Path.Combine(memoriesDirectory, "2026-01-02-id-main.jpg");
+        await File.WriteAllTextAsync(source, "source");
+        var service = new MemoryProcessingService(
+            new SuccessfulOverlayService(),
+            new UnexpectedHistoryService(),
+            new UnexpectedExifService());
+
+        try
+        {
+            var resultFolder = await service.ProcessAsync(
+                new SnapchatExportAnalysis
+                {
+                    OriginalPath = root,
+                    IsValid = true,
+                    MainMediaFiles = [source],
+                    MainMediaCount = 1
+                },
+                outputDirectory,
+                new ImmediateProgress());
+
+            Assert.NotNull(resultFolder);
+            Assert.Single(Directory.GetFiles(resultFolder!, "*.jpg"));
+            var report = await File.ReadAllTextAsync(Path.Combine(resultFolder!, "Report.txt"));
+            Assert.Contains("metadata skipped", report, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Success: 1", report);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ProcessAsync_CountsAtMostOneFailurePerSourceFile()
     {
         var root = Path.Combine(Path.GetTempPath(), $"snaprestore-test-{Guid.NewGuid():N}");
@@ -58,6 +98,43 @@ public sealed class MemoryProcessingServiceTests
             File.Copy(sourceFile, destinationFile);
             return Task.FromResult(false);
         }
+    }
+
+    private sealed class SuccessfulOverlayService : IOverlayService
+    {
+        public Task<bool> ApplyOverlayIfPresentAsync(
+            string sourceFile,
+            string destinationFile,
+            string reportFile,
+            CancellationToken cancellationToken = default)
+        {
+            File.Copy(sourceFile, destinationFile);
+            return Task.FromResult(true);
+        }
+    }
+
+    private sealed class UnexpectedHistoryService : IMemoriesHistoryService
+    {
+        public Task<IReadOnlyList<SnapchatMemoryHistoryItem>> ParseAsync(
+            string memoriesHistoryJsonPath,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("History parsing should be skipped without JSON.");
+    }
+
+    private sealed class UnexpectedExifService : IExifToolService
+    {
+        public Task<MediaMetadata> ReadMetadataAsync(
+            string filePath,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Metadata reading should be skipped without JSON.");
+
+        public Task WriteMetadataAsync(
+            string filePath,
+            DateTime captureDateUtc,
+            double? latitude,
+            double? longitude,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Metadata writing should be skipped without JSON.");
     }
 
     private sealed class StubHistoryService(DateTime timestamp) : IMemoriesHistoryService

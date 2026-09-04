@@ -121,12 +121,12 @@
                                    FontWeight="Bold"
                                    HorizontalAlignment="Center"/>
 
-                        <TextBlock Text="Memories JSON"
+                        <TextBlock Text="Memories JSON (optional)"
                                    FontSize="19"
                                    FontWeight="SemiBold"
                                    HorizontalAlignment="Center"/>
 
-                        <TextBlock Text="Drop the JSON file here"
+                        <TextBlock Text="Add JSON to restore dates and locations"
                                    FontSize="14"
                                    TextWrapping="Wrap"
                                    TextAlignment="Center"

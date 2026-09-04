@@ -33,7 +33,14 @@ public sealed class MemoryProcessingService(
 
         Directory.CreateDirectory(outputFolder);
         var reportFile = Path.Combine(outputFolder, "Report.txt");
-        await File.WriteAllTextAsync(reportFile, "SnapRestore Report\n\n", cancellationToken);
+        var hasMemoriesHistory = !string.IsNullOrWhiteSpace(analysis.MemoriesHistoryJsonPath);
+        var modeDescription = hasMemoriesHistory
+            ? "Mode: Restore media and apply metadata"
+            : "Mode: Restore media only (metadata skipped; no memories JSON selected)";
+        await File.WriteAllTextAsync(
+            reportFile,
+            $"SnapRestore Report\n\n{modeDescription}\n\n",
+            cancellationToken);
 
         if (!analysis.IsValid)
         {
@@ -41,14 +48,14 @@ public sealed class MemoryProcessingService(
             return outputFolder;
         }
 
-        if (string.IsNullOrWhiteSpace(analysis.MemoriesHistoryJsonPath))
+        MemoryMatcher? memoryMatcher = null;
+        if (hasMemoriesHistory)
         {
-            await AppendProcessErrorAsync(reportFile, "Memories history JSON file is required.", cancellationToken);
-            return outputFolder;
+            var memories = await memoriesHistoryService.ParseAsync(
+                analysis.MemoriesHistoryJsonPath!,
+                cancellationToken);
+            memoryMatcher = new MemoryMatcher(memories);
         }
-
-        var memories = await memoriesHistoryService.ParseAsync(analysis.MemoriesHistoryJsonPath, cancellationToken);
-        var memoryMatcher = new MemoryMatcher(memories);
 
         var files = analysis.MainMediaFiles
             .OrderBy(GetDateFromFileName)
@@ -79,31 +86,35 @@ public sealed class MemoryProcessingService(
 
                 try
                 {
-                    MediaMetadata metadata;
-                    try
+                    SnapchatMemoryHistoryItem? matchedMemory = null;
+                    if (memoryMatcher is not null)
                     {
-                        metadata = await exifToolService.ReadMetadataAsync(sourceFile, cancellationToken);
-                    }
-                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        metadata = new MediaMetadata();
-                        fileFailed = true;
-                        await AppendFailureAsync(reportFile, sourceFile, ex, CancellationToken.None);
-                    }
+                        MediaMetadata metadata;
+                        try
+                        {
+                            metadata = await exifToolService.ReadMetadataAsync(sourceFile, cancellationToken);
+                        }
+                        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            metadata = new MediaMetadata();
+                            fileFailed = true;
+                            await AppendFailureAsync(reportFile, sourceFile, ex, CancellationToken.None);
+                        }
 
-                    var mediaType = GetMediaType(sourceFile);
-                    var matchedMemory = memoryMatcher.Match(
-                        mediaType,
-                        metadata.CreateDateUtc,
-                        metadata.FileModifyDateUtc);
+                        var mediaType = GetMediaType(sourceFile);
+                        matchedMemory = memoryMatcher.Match(
+                            mediaType,
+                            metadata.CreateDateUtc,
+                            metadata.FileModifyDateUtc);
 
-                    if (matchedMemory is null)
-                    {
-                        await AppendNoMatchingMemoryAsync(reportFile, sourceFile, mediaType, cancellationToken);
+                        if (matchedMemory is null)
+                        {
+                            await AppendNoMatchingMemoryAsync(reportFile, sourceFile, mediaType, cancellationToken);
+                        }
                     }
 
                     var captureDateUtc = matchedMemory?.DateUtc;
