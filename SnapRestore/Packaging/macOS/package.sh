@@ -19,6 +19,10 @@ MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 DMG_PATH="$ARTIFACTS_DIR/$APP_NAME-$VERSION-$RUNTIME.dmg"
 
+if [ ! -x "$PROJECT_DIR/Tools/$RUNTIME/exiftool" ]; then
+  "$PROJECT_DIR/Packaging/fetch-exiftool.sh" "$RUNTIME"
+fi
+
 dotnet publish "$PROJECT_DIR/SnapRestore.csproj" \
   -c "$CONFIGURATION" \
   -r "$RUNTIME" \

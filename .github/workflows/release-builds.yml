@@ -28,6 +28,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Fetch verified ExifTool
+        run: SnapRestore/Packaging/fetch-exiftool.sh "${{ matrix.runtime }}"
+
       - name: Restore
         run: dotnet restore SnapRestore/SnapRestore.csproj -r ${{ matrix.runtime }}
 
@@ -92,6 +95,10 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      - name: Fetch verified ExifTool
+        shell: pwsh
+        run: ./SnapRestore/Packaging/fetch-exiftool.ps1
 
       - name: Restore
         shell: pwsh

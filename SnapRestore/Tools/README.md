@@ -1,23 +1,24 @@
 Bundled external tools
 ======================
 
-Release binaries are bundled in runtime-specific folders:
+FFmpeg release binaries are stored in runtime-specific folders:
 
 - `Tools/osx-arm64/ffmpeg`
-- `Tools/osx-arm64/exiftool`
 - `Tools/osx-x64/ffmpeg`
-- `Tools/osx-x64/exiftool`
 - `Tools/win-x64/ffmpeg.exe`
-- `Tools/win-x64/exiftool.exe`
 
-Anything under `Tools/` is copied to build and publish output.
+ExifTool is deliberately not committed. Packaging scripts download the official
+pinned 13.59 archive, verify its SHA-256 checksum, and stage the executable and
+required support files in the matching `Tools/<runtime-id>/` folder. Anything
+under `Tools/` is then copied to build and publish output.
 
 At runtime the app checks the matching folder first, then falls back to `ffmpeg` and `exiftool` on PATH.
 
 Current bundled versions:
 
 - FFmpeg: 9.0.1
-- ExifTool: 13.59 from the official ExifTool distribution
+- ExifTool: 13.59, fetched from the official SourceForge downloads published at
+  https://exiftool.org/
 
 The macOS FFmpeg executables are built from the official 9.0.1 source release:
 https://ffmpeg.org/releases/ffmpeg-9.0.1.tar.xz
@@ -35,13 +36,25 @@ It is a GPLv3 build and includes `libx264`. The upstream licence and build READM
 are stored beside the executable. SnapRestore itself is distributed separately
 from FFmpeg and invokes it as an external process.
 
-The Windows ExifTool package requires the sibling `exiftool_files` folder to remain next to `exiftool.exe`.
+The Windows ExifTool package requires the sibling `exiftool_files` folder to
+remain next to `exiftool.exe`. The macOS Perl distribution requires its sibling
+`lib` folder. Both are present in finished releases but ignored by Git.
+
+Fetch ExifTool for local packaging with:
+
+```sh
+SnapRestore/Packaging/fetch-exiftool.sh osx-arm64
+SnapRestore/Packaging/fetch-exiftool.sh osx-x64
+```
+
+On Windows, run `SnapRestore/Packaging/fetch-exiftool.ps1` in PowerShell.
 
 Verification
 ------------
 
 Run `shasum -a 256 -c Tools/checksums.sha256` from the `SnapRestore` project
-directory after downloading or replacing a tool.
+directory after replacing FFmpeg. ExifTool archive checksums are pinned in the
+fetch scripts and verified before extraction.
 
 Redistribution notice
 ---------------------

@@ -28,6 +28,13 @@ project.lock.json
 project.fragment.lock.json
 artifacts/
 
+# External tools fetched by packaging scripts
+SnapRestore/Tools/*/exiftool
+SnapRestore/Tools/*/exiftool.exe
+SnapRestore/Tools/*/exiftool_files/
+SnapRestore/Tools/*/lib/
+SnapRestore/Tools/*/ExifTool-README.txt
+
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
 
